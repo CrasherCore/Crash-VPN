@@ -1,510 +1,134 @@
-<!DOCTYPE html>
-<html lang="ru">
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>Fast Food Menu</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Shop</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f7f7f7; margin:0; }
-        .menu { display: flex; flex-wrap: wrap; gap: 16px; max-width: 400px; margin: 40px auto; }
-        .item { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 16px; width: 120px; text-align: center; }
-        .item img { width: 48px; height: 48px; }
-        .counter-block {
+        :root {
+            --tg-theme-text-color: #222;
+            --tg-theme-bg-color: #fff;
+            --tg-theme-button-color: #222;
+            --tg-theme-secondary-bg-color: #eee;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@200;500&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 200;
+            color: var(--tg-theme-text-color);
+            background: var(--tg-theme-bg-color);
+        }
+
+        #main {
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-top: 50px;
+            margin-bottom: 10px;
+        }
+
+        img {
+            width: 70px;
+            margin: 30px auto;
+        }
+
+        p {
+            width:350px;
+            margin: 0 auto;
+        }
+
+        .counter-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 50px;
+        }
+
+        .counter-btn {
+            border: 0;
+            border-radius: 5px;
+            height: 60px;
+            width: 60px;
+            font-size: 32px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 300ms ease;
+            color: var(--tg-theme-button-color);
+            background: var(--tg-theme-secondary-bg-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            margin-top: 8px;
         }
-        .counter-btn {
-            background: #ffb300;
-            border: none;
-            border-radius: 5px;
-            width: 32px;
-            height: 32px;
-            color: #fff;
-            font-size: 22px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
+
+        .counter-btn:hover {
+            background: var(--tg-theme-button-color);
+            color: var(--tg-theme-bg-color);
         }
-        .counter-btn:active {
-            background: #e69500;
-            transform: scale(0.92);
-        }
-        .counter-value {
-            min-width: 28px;
-            text-align: center;
-            font-size: 18px;
+
+        #counter {
+            min-width: 60px;
+            font-size: 28px;
             font-weight: bold;
             color: #1a8f1a;
-        }
-        .add-btn {
-            margin-top: 8px;
-            background: #ffb300;
-            border: none;
+            background: #f5f5f5;
             border-radius: 5px;
-            padding: 6px 12px;
-            color: #fff;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-        }
-        .add-btn:active {
-            background: #e69500;
-            transform: scale(0.96);
-        }
-        .input-block { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 30px auto 0 auto; }
-        .input-block input { width: 60px; padding: 6px; font-size: 18px; border-radius: 5px; border: 1px solid #ccc; text-align: center; }
-        .input-block button { background: #1a8f1a; color: #fff; border: none; border-radius: 5px; padding: 6px 14px; font-weight: bold; cursor: pointer; }
-        /* Корзина */
-        .cart-box {
-            position: fixed;
-            right: 24px;
-            bottom: 24px;
-            width: 280px;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px #0002;
-            padding: 18px 16px 16px 16px;
-            z-index: 100;
-            opacity: 0;
-            transform: translateY(30px) scale(0.98);
-            pointer-events: none;
-            transition: opacity 0.35s cubic-bezier(.4,1.4,.6,1), transform 0.35s cubic-bezier(.4,1.4,.6,1);
-        }
-        .cart-box.visible {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            pointer-events: auto;
-        }
-        .cart-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #222;
-        }
-        .cart-list {
-            max-height: 120px;
-            overflow-y: auto;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        .cart-item {
+            padding: 0 20px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 5px;
-        }
-        .cart-total {
-            font-weight: bold;
-            margin-bottom: 12px;
-            text-align: right;
-            color: #1a8f1a;
-        }
-        .cart-btn {
-            width: 100%;
-            margin-bottom: 8px;
-            padding: 8px 0;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-        }
-        .pay-btn {
-            background: #ffb300;
-            color: #fff;
-        }
-        .pay-btn:active {
-            background: #e69500;
-            transform: scale(0.97);
-        }
-        /* --- Промокод --- */
-        .promo-input-block {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
-            align-items: center;
-        }
-        .promo-input-block input,
-        .promo-input-block .promo-btn-apply {
-            height: 40px;
-            box-sizing: border-box;
-        }
-        .promo-input-block input {
-            flex: 0 1 65%;
-            min-width: 110px;
-            max-width: 200px;
-            padding: 7px 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        .promo-input-block input:focus {
-            border-color: #1a8f1a;
-            outline: none;
-        }
-        .promo-input-block .promo-btn-apply {
-            flex: 0 1 35%;
-            width: 0;
-            background: #1a8f1a;
-            color: #fff;
-            border: none;
-            border-radius: 7px;
-            padding: 0;
-            font-size: 15px;
-            min-width: 44px;
-            max-width: 90px;
-            font-weight: bold;
-            box-shadow: 0 2px 8px #0001;
-            cursor: pointer;
-            line-height: 1;
-            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
-            text-align: center;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .promo-input-block .promo-btn-apply:active {
-            background: #146d13;
-            box-shadow: 0 1px 4px #0002;
-            transform: scale(1.04);
-        }
-        .promo-message {
-            color: #d32f2f;
-            font-size: 14px;
-            margin-bottom: 8px;
-            text-align: center;
-        }
-        .promo-message.success {
-            color: #1a8f1a;
-        }
-        /* Кнопка для показа промокодов */
-        #togglePromoList {
-            position: fixed;
-            right: 24px;
-            bottom: 320px;
-            z-index: 101;
-            background: #1a8f1a;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 18px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 8px #0002;
-            transition: background 0.2s, transform 0.1s;
-        }
-        #togglePromoList:active {
-            background: #146d13;
-            transform: scale(0.97);
-        }
-        /* Список промокодов */
-        .promo-list-box {
-            position: fixed;
-            right: 24px;
-            bottom: 370px;
-            width: 280px;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px #0002;
-            padding: 14px 16px 14px 16px;
-            z-index: 102;
-            max-height: 180px;
-            overflow-y: auto;
-            display: none;
-            opacity: 0;
-            transform: translateY(20px) scale(0.98);
-            transition: opacity 0.35s cubic-bezier(.4,1.4,.6,1), transform 0.35s cubic-bezier(.4,1.4,.6,1);
-        }
-        .promo-list-box.visible {
-            display: block;
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-        .promo-list-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #222;
-        }
-        .promo-list {
-            font-size: 15px;
-        }
-        .promo-list li {
-            margin-bottom: 4px;
-        }
-        @media (max-width: 600px) {
-            .cart-box, .promo-list-box, #togglePromoList {
-                right: 8px;
-            }
-            .cart-box, .promo-list-box {
-                width: 96vw;
-                min-width: 0;
-                max-width: 99vw;
-            }
-            .menu {
-                gap: 8px;
-                max-width: 99vw;
-            }
-            .item {
-                width: 44vw;
-                min-width: 140px;
-                max-width: 180px;
-                padding: 10px;
-            }
-            .promo-input-block input,
-            .promo-input-block .promo-btn-apply {
-                height: 34px;
-            }
-            .promo-input-block input {
-                font-size: 14px;
-                min-width: 70px;
-            }
-            .promo-input-block .promo-btn-apply {
-                font-size: 14px;
-                min-width: 38px;
-                max-width: 70px;
-            }
+            justify-content: center;
+            height: 60px;
+            margin: 0 5px;
         }
     </style>
 </head>
 <body>
-    <div class="input-block">
-        <input type="number" id="userNumber" placeholder="Число" />
-        <button onclick="updateNumberLot()">Изменить лот-число</button>
+    <div id="main">
+        <h1>Покупка подписки Crash vpn</h1>
+        <img src="https://tse2.mm.bing.net/th/id/OIP.dmEnuRP8hVmo6MKJMDoE9wHaD8?rs=1&pid=ImgDetMain&o=7&rm=3">
+        <p>Самый дешевый и действенный vpn</p>
+        <div class="counter-wrapper">
+            <button class="counter-btn" id="decrement">−</button>
+            <span id="counter">0</span>
+            <button class="counter-btn" id="increment">+</button>
+        </div>
     </div>
-    <div class="menu" id="menu"></div>
-
-    <!-- Кнопка для показа/скрытия промокодов -->
-    <button id="togglePromoList">Показать промокоды</button>
-
-    <!-- Список промокодов, скрыт по умолчанию -->
-    <div class="promo-list-box" id="promoListBox">
-        <div class="promo-list-title">Доступные промокоды:</div>
-        <ul class="promo-list" id="promoList"></ul>
-    </div>
-
-    <div class="cart-box" id="cartBox"></div>
-
+    <form id="x_days_key">
+        <input type="text" placeholder="Ваше количество дней" id="x_days">
+        <button id="order">Оформить</button>
+    </form>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
-        // Промокоды: код и описание
-        const promoCodes = [
-            { code: 'FOOD10', desc: 'Скидка 10% на всё', discount: 0.10 },
-            { code: 'FAST50', desc: 'Скидка 50 рублей при заказе от 300 рублей', discount: 50, min: 300 },
-            { code: 'WELCOME', desc: 'Скидка 20 рублей для новых клиентов', discount: 20 }
-        ];
+        let count = 0;
+        const counter = document.getElementById('counter');
+        const incrementBtn = document.getElementById('increment');
+        const decrementBtn = document.getElementById('decrement');
 
-        const menu = [
-            { name: 'Бургер', price: 4.99, img: '🍔' },
-            { name: 'Фри', price: 1.49, img: '🍟' },
-            { name: 'Хотдог', price: 3.49, img: '🌭' },
-            { name: 'Тако', price: 3.99, img: '🌮' },
-            { name: 'Пицца', price: 7.99, img: '🍕' },
-            { name: '7', img: '🔢', isNumberLot: true }
-        ];
+        incrementBtn.addEventListener('click', function() {
+            count++;
+            counter.textContent = count;
+        });
 
-        const counters = {}; // { idx: count }
-        const cart = {};
-        let appliedPromo = null;
-        let promoMessage = '';
-
-        function getPrice(item) {
-            if (item.isNumberLot && !isNaN(item.name)) {
-                return Math.floor(Number(item.name) * 5.5);
+        decrementBtn.addEventListener('click', function() {
+            if (count > 0) {
+                count--;
+                counter.textContent = count;
             }
-            return item.price;
-        }
-
-        function renderMenu() {
-            const menuDiv = document.getElementById('menu');
-            menuDiv.innerHTML = '';
-            menu.forEach((item, idx) => {
-                const price = getPrice(item);
-                let html = `
-                    <div class="item">
-                        <div style="font-size:32px">${item.img}</div>
-                        <div>${item.name} - ${price} рублей</div>
-                `;
-                if (item.isNumberLot) {
-                    html += `<button class="add-btn" onclick="addToCart(${idx})">Добавить</button>`;
-                } else if (counters[idx]) {
-                    html += `
-                        <div class="counter-block">
-                            <button class="counter-btn" onclick="decrement(${idx})">-</button>
-                            <span class="counter-value" id="counter-${idx}">${counters[idx]}</span>
-                            <button class="counter-btn" onclick="increment(${idx})">+</button>
-                        </div>
-                    `;
-                } else {
-                    html += `<button class="add-btn" onclick="showCounter(${idx})">Добавить</button>`;
-                }
-                html += `</div>`;
-                menuDiv.innerHTML += html;
-            });
-            renderCart();
-        }
-
-        window.showCounter = function(idx) {
-            counters[idx] = 1;
-            cart[idx] = 1;
-            renderMenu();
-        }
-
-        window.increment = function(idx) {
-            counters[idx]++;
-            cart[idx] = counters[idx];
-            renderMenu();
-        }
-
-        window.decrement = function(idx) {
-            if (counters[idx] > 1) {
-                counters[idx]--;
-                cart[idx] = counters[idx];
-            } else {
-                delete counters[idx];
-                delete cart[idx];
-            }
-            renderMenu();
-        }
-
-        window.addToCart = function(idx) {
-            const item = menu[idx];
-            const price = getPrice(item);
-            cart[idx] = (cart[idx] || 0) + 1;
-            Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-            Telegram.WebApp.showPopup({
-                title: "Добавлено!",
-                message: `${item.name} добавлен в корзину.`,
-                buttons: [{id: 'ok', type: 'close', text: 'ОК'}]
-            });
-            renderCart();
-        }
-
-        window.updateNumberLot = function() {
-            const input = document.getElementById('userNumber');
-            const value = input.value.trim();
-            if (value === '' || isNaN(value)) {
-                alert('Введите корректное число!');
-                return;
-            }
-            const numberLot = menu.find(item => item.isNumberLot);
-            numberLot.name = value;
-            input.value = '';
-            renderMenu();
-        }
-
-        // Корзина
-        function renderCart() {
-            const cartBox = document.getElementById('cartBox');
-            const items = Object.keys(cart)
-                .filter(idx => cart[idx] > 0)
-                .map(idx => ({...menu[idx], count: cart[idx], idx: Number(idx)}));
-            if (items.length === 0) {
-                cartBox.classList.remove('visible');
-                appliedPromo = null;
-                promoMessage = '';
-                cartBox.innerHTML = '';
-                return;
-            }
-            let total = 0;
-            let listHtml = '';
-            items.forEach(item => {
-                const price = getPrice(item);
-                total += price * item.count;
-                listHtml += `<div class="cart-item">
-                    <span>${item.img} ${item.name} × ${item.count}</span>
-                    <span>${price * item.count} руб.</span>
-                </div>`;
-            });
-
-            // Применение промокода
-            let promoText = '';
-            let discount = 0;
-            if (appliedPromo) {
-                if (appliedPromo.discount < 1) {
-                    discount = Math.floor(total * appliedPromo.discount);
-                    promoText = `Промокод: ${appliedPromo.code} (-${discount} руб.)`;
-                } else if (appliedPromo.min && total >= appliedPromo.min) {
-                    discount = appliedPromo.discount;
-                    promoText = `Промокод: ${appliedPromo.code} (-${discount} руб.)`;
-                } else if (!appliedPromo.min) {
-                    discount = appliedPromo.discount;
-                    promoText = `Промокод: ${appliedPromo.code} (-${discount} руб.)`;
-                } else {
-                    promoText = `Промокод: ${appliedPromo.code} (не выполнены условия)`;
-                }
-            }
-            let totalWithDiscount = Math.max(total - discount, 0);
-
-            cartBox.innerHTML = `
-                <div class="cart-title">Корзина</div>
-                <div class="cart-list">${listHtml}</div>
-                <div class="cart-total">Итого: ${totalWithDiscount} рублей</div>
-                ${promoText ? `<div style="color:#1a8f1a; font-size:14px; margin-bottom:8px;">${promoText}</div>` : ''}
-                <form class="promo-input-block" onsubmit="applyPromo(event)">
-                    <input type="text" id="promoInput" placeholder="Промокод" autocomplete="off" value="${appliedPromo ? appliedPromo.code : ''}">
-                    <button type="submit" class="promo-btn-apply">Применить</button>
-                </form>
-                ${promoMessage ? `<div class="promo-message${promoMessage === 'Промокод применён!' ? ' success' : ''}">${promoMessage}</div>` : ''}
-                <button class="cart-btn pay-btn" onclick="payOrder()">Оплатить</button>
-            `;
-            cartBox.classList.add('visible');
-        }
-
-        // Применение промокода через форму
-        window.applyPromo = function(event) {
-            event.preventDefault();
-            const input = document.getElementById('promoInput');
-            const code = input.value.trim();
-            if (!code) {
-                promoMessage = 'Введите промокод!';
-                renderCart();
-                return;
-            }
-            const promo = promoCodes.find(p => p.code.toLowerCase() === code.toLowerCase());
-            if (promo) {
-                appliedPromo = promo;
-                promoMessage = 'Промокод применён!';
-            } else {
-                appliedPromo = null;
-                promoMessage = 'Промокод не найден.';
-            }
-            renderCart();
-        }
-
-        window.payOrder = function() {
-            alert('Оплата заказа (пример)');
-        }
-
-        // Список промокодов
-        function renderPromoList() {
-            const promoList = document.getElementById('promoList');
-            promoList.innerHTML = promoCodes.map(p =>
-                `<li><b>${p.code}</b> — ${p.desc}</li>`
-            ).join('');
-        }
-
-        // Показать/скрыть список промокодов с анимацией
-        document.getElementById('togglePromoList').onclick = function() {
-            const box = document.getElementById('promoListBox');
-            if (box.classList.contains('visible')) {
-                box.classList.remove('visible');
-                setTimeout(() => { box.style.display = 'none'; }, 350);
-                this.textContent = 'Показать промокоды';
-            } else {
-                box.style.display = 'block';
-                setTimeout(() => { box.classList.add('visible'); }, 10);
-                this.textContent = 'Скрыть промокоды';
-            }
-        };
-
-        renderPromoList();
-        renderMenu();
+        });
     </script>
 </body>
 </html>
+
