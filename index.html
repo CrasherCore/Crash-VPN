@@ -55,6 +55,84 @@
         .input-block { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 30px auto 0 auto; }
         .input-block input { width: 60px; padding: 6px; font-size: 18px; border-radius: 5px; border: 1px solid #ccc; text-align: center; }
         .input-block button { background: #1a8f1a; color: #fff; border: none; border-radius: 5px; padding: 6px 14px; font-weight: bold; cursor: pointer; }
+        /* Корзина */
+        .cart-box {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 280px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px #0002;
+            padding: 18px 16px 16px 16px;
+            z-index: 100;
+        }
+        .cart-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #222;
+        }
+        .cart-list {
+            max-height: 120px;
+            overflow-y: auto;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .cart-total {
+            font-weight: bold;
+            margin-bottom: 12px;
+            text-align: right;
+            color: #1a8f1a;
+        }
+        .cart-btn {
+            width: 100%;
+            margin-bottom: 8px;
+            padding: 8px 0;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .promo-btn {
+            background: #1a8f1a;
+            color: #fff;
+        }
+        .pay-btn {
+            background: #ffb300;
+            color: #fff;
+        }
+        /* Список промокодов */
+        .promo-list-box {
+            position: fixed;
+            right: 24px;
+            bottom: 320px;
+            width: 280px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px #0002;
+            padding: 14px 16px 14px 16px;
+            z-index: 99;
+        }
+        .promo-list-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #222;
+        }
+        .promo-list {
+            font-size: 15px;
+        }
+        .promo-list li {
+            margin-bottom: 4px;
+        }
     </style>
 </head>
 <body>
@@ -63,19 +141,33 @@
         <button onclick="updateNumberLot()">Изменить лот-число</button>
     </div>
     <div class="menu" id="menu"></div>
+    <!-- Список промокодов -->
+    <div class="promo-list-box">
+        <div class="promo-list-title">Доступные промокоды:</div>
+        <ul class="promo-list" id="promoList"></ul>
+    </div>
+    <div class="cart-box" id="cartBox" style="display:none"></div>
     <script>
+        // Промокоды: код и описание
+        const promoCodes = [
+            { code: 'FOOD10', desc: 'Скидка 10% на всё', discount: 0.10 },
+            { code: 'FAST50', desc: 'Скидка 50 рублей при заказе от 300 рублей', discount: 50, min: 300 },
+            { code: 'WELCOME', desc: 'Скидка 20 рублей для новых клиентов', discount: 20 }
+        ];
+
         // Лот-число всегда последний в массиве!
         const menu = [
             { name: 'Бургер', price: 250, img: '🍔' },
             { name: 'Фри', price: 150, img: '🍟' },
             { name: 'Хотдог', price: 200, img: '🌭' },
-            { name: 'Тако', price: 250, img: '🌮' },
-            { name: 'Пицца', price: 700, img: '🍕' },
-            { name: '7', img: '🔢', isNumberLot: true } // лот-число по умолчанию
+            { name: 'Тако', price: 400, img: '🌮' },
+            { name: 'Пицца', price: 800, img: '🍕' },
+            { name: '7', img: '🔢', isNumberLot: true }
         ];
 
-        // Индексы товаров, для которых показывается счетчик (кроме лота-числа)
         const counters = {}; // { idx: count }
+        const cart = {};
+        let appliedPromo = null;
 
         function getPrice(item) {
             if (item.isNumberLot && !isNaN(item.name)) {
@@ -94,11 +186,9 @@
                         <div style="font-size:32px">${item.img}</div>
                         <div>${item.name} - ${price} рублей</div>
                 `;
-                // Для лота-числа обычная кнопка
                 if (item.isNumberLot) {
                     html += `<button class="add-btn" onclick="addToCart(${idx})">Добавить</button>`;
                 } else if (counters[idx]) {
-                    // Если был нажат "Добавить", показываем счетчик
                     html += `
                         <div class="counter-block">
                             <button class="counter-btn" onclick="decrement(${idx})">-</button>
@@ -107,49 +197,50 @@
                         </div>
                     `;
                 } else {
-                    // Обычная кнопка "Добавить"
                     html += `<button class="add-btn" onclick="showCounter(${idx})">Добавить</button>`;
                 }
                 html += `</div>`;
                 menuDiv.innerHTML += html;
             });
+            renderCart();
         }
 
-        // Показываем счетчик для товара
         window.showCounter = function(idx) {
             counters[idx] = 1;
+            cart[idx] = 1;
             renderMenu();
         }
 
-        // Увеличиваем количество
         window.increment = function(idx) {
             counters[idx]++;
+            cart[idx] = counters[idx];
             renderMenu();
         }
 
-        // Уменьшаем количество, если 0 — убираем счетчик и возвращаем кнопку
         window.decrement = function(idx) {
             if (counters[idx] > 1) {
                 counters[idx]--;
+                cart[idx] = counters[idx];
             } else {
                 delete counters[idx];
+                delete cart[idx];
             }
             renderMenu();
         }
 
-        // Добавляем в корзину (для лота-числа)
         window.addToCart = function(idx) {
             const item = menu[idx];
             const price = getPrice(item);
+            cart[idx] = (cart[idx] || 0) + 1;
             Telegram.WebApp.HapticFeedback.notificationOccurred('success');
             Telegram.WebApp.showPopup({
                 title: "Добавлено!",
                 message: `${item.name} добавлен в корзину.`,
                 buttons: [{id: 'ok', type: 'close', text: 'ОК'}]
             });
+            renderCart();
         }
 
-        // Изменяем лот-число
         window.updateNumberLot = function() {
             const input = document.getElementById('userNumber');
             const value = input.value.trim();
@@ -163,6 +254,86 @@
             renderMenu();
         }
 
+        // Корзина
+        function renderCart() {
+            const cartBox = document.getElementById('cartBox');
+            const items = Object.keys(cart)
+                .filter(idx => cart[idx] > 0)
+                .map(idx => ({...menu[idx], count: cart[idx], idx: Number(idx)}));
+            if (items.length === 0) {
+                cartBox.style.display = 'none';
+                appliedPromo = null;
+                return;
+            }
+            let total = 0;
+            let listHtml = '';
+            items.forEach(item => {
+                const price = getPrice(item);
+                total += price * item.count;
+                listHtml += `<div class="cart-item">
+                    <span>${item.img} ${item.name} × ${item.count}</span>
+                    <span>${price * item.count} руб.</span>
+                </div>`;
+            });
+
+            // Применение промокода
+            let promoText = '';
+            let discount = 0;
+            if (appliedPromo) {
+                if (appliedPromo.discount < 1) {
+                    // Процентная скидка
+                    discount = Math.floor(total * appliedPromo.discount);
+                    promoText = `Промокод: ${appliedPromo.code} (-${discount} руб.)`;
+                } else if (appliedPromo.min && total >= appliedPromo.min) {
+                    discount = appliedPromo.discount;
+                    promoText = `Промокод: ${appliedPromo.code} (-${discount} руб.)`;
+                } else if (!appliedPromo.min) {
+                    discount = appliedPromo.discount;
+                    promoText = `Промокод: ${appliedPromo.code} (-${discount} руб.)`;
+                } else {
+                    promoText = `Промокод: ${appliedPromo.code} (не выполнены условия)`;
+                }
+            }
+            let totalWithDiscount = Math.max(total - discount, 0);
+
+            cartBox.innerHTML = `
+                <div class="cart-title">Корзина</div>
+                <div class="cart-list">${listHtml}</div>
+                <div class="cart-total">Итого: ${totalWithDiscount} рублей</div>
+                ${promoText ? `<div style="color:#1a8f1a; font-size:14px; margin-bottom:8px;">${promoText}</div>` : ''}
+                <button class="cart-btn promo-btn" onclick="showPromo()">Промокод</button>
+                <button class="cart-btn pay-btn" onclick="payOrder()">Оплатить</button>
+            `;
+            cartBox.style.display = 'block';
+        }
+
+        window.showPromo = function() {
+            const code = prompt('Введите промокод:');
+            if (!code) return;
+            const promo = promoCodes.find(p => p.code.toLowerCase() === code.trim().toLowerCase());
+            if (promo) {
+                appliedPromo = promo;
+                alert('Промокод применён!');
+            } else {
+                appliedPromo = null;
+                alert('Промокод не найден.');
+            }
+            renderCart();
+        }
+
+        window.payOrder = function() {
+            alert('Оплата заказа (пример)');
+        }
+
+        // Список промокодов
+        function renderPromoList() {
+            const promoList = document.getElementById('promoList');
+            promoList.innerHTML = promoCodes.map(p =>
+                `<li><b>${p.code}</b> — ${p.desc}</li>`
+            ).join('');
+        }
+
+        renderPromoList();
         renderMenu();
     </script>
 </body>
