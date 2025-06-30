@@ -1,82 +1,169 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Shop</title>
+    <title>Fast Food Menu</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --tg-theme-text-color: #222;
-            --tg-theme-bg-color: #fff;
-            --tg-theme-button-color: #222;
-            --tg-theme-secondary-bg-color: #eee;
+        body { font-family: Arial, sans-serif; background: #f7f7f7; }
+        .menu { display: flex; flex-wrap: wrap; gap: 16px; max-width: 400px; margin: 40px auto; }
+        .item { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 16px; width: 120px; text-align: center; }
+        .item img { width: 48px; height: 48px; }
+        .counter-block {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 8px;
         }
-
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@200;500&display=swap');
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 200;
-            color: var(--tg-theme-text-color);
-            background: var(--tg-theme-bg-color);
-        }
-
-        #main {
-            width: 100%;
-            padding: 20px;
-            text-align: center;
-        }
-
-        h1 {
-            margin-top: 50px;
-            margin-bottom: 10px;
-        }
-
-        img {
-            width: 70px;
-            margin: 30px auto;
-        }
-
-        p {
-            width:350px;
-            margin: 0 auto;
-        }
-
-        button {
-            border: 0;
+        .counter-btn {
+            background: #ffb300;
+            border: none;
             border-radius: 5px;
-            margin-top: 50px;
-            height: 60px;
-            width: 200px;
-            font-size: 20px;
-            font-weight: 500;
+            width: 32px;
+            height: 32px;
+            color: #fff;
+            font-size: 22px;
+            font-weight: bold;
             cursor: pointer;
-            transition: all 500ms ease;
-            color: var(--tg-theme-button-color);
-            background: var(--tg-theme-secondary-bg-color);
+            transition: background 0.2s;
         }
-
-        button:hover {
-            background: var(--tg-theme-button-color);
-            color: var(--tg-theme-bg-color);
+        .counter-btn:active {
+            background: #e69500;
         }
+        .counter-value {
+            min-width: 28px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a8f1a;
+        }
+        .add-btn {
+            margin-top: 8px;
+            background: #ffb300;
+            border: none;
+            border-radius: 5px;
+            padding: 6px 12px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .add-btn:active {
+            background: #e69500;
+        }
+        .input-block { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 30px auto 0 auto; }
+        .input-block input { width: 60px; padding: 6px; font-size: 18px; border-radius: 5px; border: 1px solid #ccc; text-align: center; }
+        .input-block button { background: #1a8f1a; color: #fff; border: none; border-radius: 5px; padding: 6px 14px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div id="main">
-        <h1>Покупка подписки Crash vpn</h1>
-        <img src="https://tse2.mm.bing.net/th/id/OIP.dmEnuRP8hVmo6MKJMDoE9wHaD8?rs=1&pid=ImgDetMain&o=7&rm=3">
-        <p>Самый дешевый и действенный vpn</p>
-        <button id="buy"> Купить ВПН</button>
+    <div class="input-block">
+        <input type="number" id="userNumber" placeholder="Число">
+        <button onclick="updateNumberLot()">Изменить лот-число</button>
     </div>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <div class="menu" id="menu"></div>
+    <script>
+        // Лот-число всегда последний в массиве!
+        const menu = [
+            { name: 'Бургер', price: 250, img: '🍔' },
+            { name: 'Фри', price: 150, img: '🍟' },
+            { name: 'Хотдог', price: 200, img: '🌭' },
+            { name: 'Тако', price: 250, img: '🌮' },
+            { name: 'Пицца', price: 700, img: '🍕' },
+            { name: '7', img: '🔢', isNumberLot: true } // лот-число по умолчанию
+        ];
+
+        // Индексы товаров, для которых показывается счетчик (кроме лота-числа)
+        const counters = {}; // { idx: count }
+
+        function getPrice(item) {
+            if (item.isNumberLot && !isNaN(item.name)) {
+                return Math.floor(Number(item.name) * 5.5);
+            }
+            return item.price;
+        }
+
+        function renderMenu() {
+            const menuDiv = document.getElementById('menu');
+            menuDiv.innerHTML = '';
+            menu.forEach((item, idx) => {
+                const price = getPrice(item);
+                let html = `
+                    <div class="item">
+                        <div style="font-size:32px">${item.img}</div>
+                        <div>${item.name} - ${price} рублей</div>
+                `;
+                // Для лота-числа обычная кнопка
+                if (item.isNumberLot) {
+                    html += `<button class="add-btn" onclick="addToCart(${idx})">Добавить</button>`;
+                } else if (counters[idx]) {
+                    // Если был нажат "Добавить", показываем счетчик
+                    html += `
+                        <div class="counter-block">
+                            <button class="counter-btn" onclick="decrement(${idx})">-</button>
+                            <span class="counter-value" id="counter-${idx}">${counters[idx]}</span>
+                            <button class="counter-btn" onclick="increment(${idx})">+</button>
+                        </div>
+                    `;
+                } else {
+                    // Обычная кнопка "Добавить"
+                    html += `<button class="add-btn" onclick="showCounter(${idx})">Добавить</button>`;
+                }
+                html += `</div>`;
+                menuDiv.innerHTML += html;
+            });
+        }
+
+        // Показываем счетчик для товара
+        window.showCounter = function(idx) {
+            counters[idx] = 1;
+            renderMenu();
+        }
+
+        // Увеличиваем количество
+        window.increment = function(idx) {
+            counters[idx]++;
+            renderMenu();
+        }
+
+        // Уменьшаем количество, если 0 — убираем счетчик и возвращаем кнопку
+        window.decrement = function(idx) {
+            if (counters[idx] > 1) {
+                counters[idx]--;
+            } else {
+                delete counters[idx];
+            }
+            renderMenu();
+        }
+
+        // Добавляем в корзину (для лота-числа)
+        window.addToCart = function(idx) {
+            const item = menu[idx];
+            const price = getPrice(item);
+            Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            Telegram.WebApp.showPopup({
+                title: "Добавлено!",
+                message: `${item.name} добавлен в корзину.`,
+                buttons: [{id: 'ok', type: 'close', text: 'ОК'}]
+            });
+        }
+
+        // Изменяем лот-число
+        window.updateNumberLot = function() {
+            const input = document.getElementById('userNumber');
+            const value = input.value.trim();
+            if (value === '' || isNaN(value)) {
+                alert('Введите корректное число!');
+                return;
+            }
+            const numberLot = menu.find(item => item.isNumberLot);
+            numberLot.name = value;
+            input.value = '';
+            renderMenu();
+        }
+
+        renderMenu();
+    </script>
 </body>
 </html>
